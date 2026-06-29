@@ -37,7 +37,6 @@ src/   (shared primitives)
   invariant_polyakov.jl              classify_loop_inv_poly (Polyakov, winding-aware canonical form)
   fast_wilson.jl                     classify_loop_fastw    (canonical form + Booth; used by record_wilson)
   gen_canon_polyakov.jl              gen_canon_poly         (used by record_polyakov -> invariant_polyakov)
-  METHOD.md                          notes on the classification method
 scripts/
   record_wilson.jl  record_polyakov.jl  writeout_nnlo_nnnlo.jl
 ```
@@ -50,4 +49,3 @@ A loop is a `Vector{Symbol}`. **Run Wilson and Polyakov in separate processes** 
 ## Notes
 - Heavy cases (n ≥ 12, etc.) are best run on a dedicated machine; the code is self-contained.
 - `record_polyakov.jl` has an in-script `grid` (target (n, Nt)) you can edit to limit the range.
-- Method details and validation history are in [`src/METHOD.md`](src/METHOD.md).
