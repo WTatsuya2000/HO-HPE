@@ -1,0 +1,14 @@
+# generated outputs
+records/
+*.csv
+loop_classification/Manifest.toml
+
+# build / run artifacts
+*.out
+*.o
+conf/
+data/
+log/
+
+# OS / editor
+.DS_Store
