@@ -63,9 +63,10 @@ double W1_local( const Gauge& V , const SingleStaple& S , const LocalElements& L
     const int mu=m[0] , nu=m[1];
     Site xm = x+mu;
     Site xn = x+nu;
-    tmp = Hermite(S(x,nu,mu,-1)) * V(x,mu);
+    tmp = Hermite( S(x,nu,mu,-1) ) * V(x,mu);
     tmp = tmp * S(xm,nu,mu,1);
-    ans += __real__( TraceProd( tmp , Hermite(V(xn,mu)) ) );
+    tmp = tmp * Hermite( V(xn,mu) );
+    ans += __real__( Trace(tmp) );
   }
   return -128. * ans;
 }
@@ -77,7 +78,8 @@ double W2_local( const Gauge& V , const SingleStaple& S , const LocalElements& L
   for( const auto& m : HPE_comb::C2 ){
     const int mu=m[0] , nu=m[1];
     tmp = LE.P(mu,nu,-1,1) + LE.P(mu,nu,1,-1);
-    ans += __real__( TraceProd( LE.P(mu,nu,1,1) , tmp ) );
+    tmp = LE.P(mu,nu,1,1) * tmp;
+    ans += __real__( Trace(tmp) );
   }
   return 32. * ans;
 }
@@ -89,8 +91,10 @@ double W3_local( const Gauge& V , const SingleStaple& S , const LocalElements& L
   for( const auto& m : HPE_comb::C2 ){
     const int mu=m[0] , nu=m[1];
     Site xn = x-nu;
-    ans += __real__( TraceProd( LE.P(mu,nu,1,1) , LE.P(mu,nu,-1,-1) ) );
-    ans += __real__( TraceProd( LE.P(mu,nu,-1,1) , LE.P(mu,nu,1,-1) ) );
+    tmp = LE.P(mu,nu,1,1) * LE.P(mu,nu,-1,-1);
+    ans += __real__( Trace(tmp) );
+    tmp = LE.P(mu,nu,-1,1) * LE.P(mu,nu,1,-1);
+    ans += __real__( Trace(tmp) );
   }
   return -32. * ans;
 }
@@ -102,8 +106,10 @@ double W4_local( const Gauge& V , const SingleStaple& S , const LocalElements& L
   for( const auto& m : HPE_comb::C2 ){
     const int mu=m[0] , nu=m[1];
     Site xn = x-nu;
-    ans += __real__( TraceProd( LE.P(mu,nu,1,1) , LE.P(nu,mu,-1,-1) ) );
-    ans += __real__( TraceProd( LE.P(mu,nu,-1,1) , LE.P(nu,mu,-1,1) ) );
+    tmp = LE.P(mu,nu,1,1) * LE.P(nu,mu,-1,-1);
+    ans += __real__( Trace(tmp) );
+    tmp = LE.P(mu,nu,-1,1) * LE.P(nu,mu,-1,1);
+    ans += __real__( Trace(tmp) );
   }
   return 64. * ans;
 }
@@ -114,7 +120,8 @@ double W5_local( const Gauge& V , const SingleStaple& S , const LocalElements& L
   double ans = 0.;
   for( const auto& m : HPE_comb::C2 ){
     const int mu=m[0] , nu=m[1];
-    ans += __real__( TraceProd( LE.P(mu,nu,1,1) , LE.P(mu,nu,1,1) ) );
+    tmp = LE.P(mu,nu,1,1) * LE.P(mu,nu,1,1);
+    ans += __real__( Trace(tmp) );
   }
   return 32. * ans / 2.;
 }
@@ -128,7 +135,8 @@ double W6_local( const Gauge& V , const SingleStaple& S , const LocalElements& L
     for( int s : {-1,1} ){
       tmp1 = LE.P(mu,nu,1,s) * LE.P(nu,mu,s,-1);
       tmp = LE.P(mu,nu,-1,-s) + LE.P(nu,mu,-s,1);
-      ans += __real__( TraceProd( tmp , tmp1 ) );
+      tmp = tmp * tmp1;
+      ans += __real__( Trace(tmp) );
     }
   }
   return -64. * ans;
@@ -141,9 +149,10 @@ double W7_local( const Gauge& V , const SingleStaple& S , const LocalElements& L
   for( const auto& m : HPE_comb::C2 ){
     const int mu=m[0] , nu=m[1];
     Site xm = x-mu;
-    tmp = S(x,mu,nu,-1) * Hermite(S(x,mu,nu,1));
-    tmp = tmp * Hermite(S(xm,mu,nu,1));
-    ans += __real__( TraceProd( tmp , S(xm,mu,nu,-1) ) );
+    tmp = S(x,mu,nu,-1) * Hermite( S(x,mu,nu,1) );
+    tmp = tmp * Hermite( S(xm,mu,nu,1) );
+    tmp = tmp * S(xm,mu,nu,-1);
+    ans += __real__( Trace(tmp) );
   }
   return -128. * ans;
 }
@@ -156,7 +165,8 @@ double W8_local( const Gauge& V , const SingleStaple& S , const LocalElements& L
     const int mu=m[0] , nu=m[1] , rho=m[2];
     tmp  = LE.P(mu,nu,1,1) + LE.P(mu,nu,1,-1);
     tmp1 = LE.P(mu,rho,1,1) + LE.P(mu,rho,1,-1);
-    ans += __real__( TraceProd( tmp , tmp1 ) );
+    tmp = tmp * tmp1;
+    ans += __real__( Trace(tmp) );
   }
   return 32. * ans;
 }
@@ -169,7 +179,8 @@ double W9_local( const Gauge& V , const SingleStaple& S , const LocalElements& L
     const int mu=m[0] , nu=m[1] , rho=m[2];
     tmp  = LE.P(mu,nu,1,1) + LE.P(mu,nu,1,-1);
     tmp1 = LE.P(rho,mu,1,-1) + LE.P(rho,mu,-1,-1);
-    ans += __real__( TraceProd( tmp , tmp1 ) );
+    tmp  = tmp * tmp1;
+    ans += __real__( Trace(tmp) );
   }
   return 32. * ans;
 }
@@ -193,11 +204,13 @@ double W11_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
     tmp = S(x,nu,rho,0) + S(x,nu,sig,0);
     tmp = Hermite(tmp) * V(x,mu);
     tmp = tmp * S(xm,nu,mu,1);
-    ans += __real__( TraceProd( tmp , Hermite(V(xn,mu)) ) );
+    tmp = tmp * Hermite( V(xn,mu) );
+    ans += __real__( Trace(tmp) );
     tmp = S(xm,nu,rho,0) + S(xm,nu,sig,0);
-    tmp = tmp * Hermite(V(xn,mu));
-    tmp = tmp * Hermite(S(x,nu,mu,-1));
-    ans += __real__( TraceProd( tmp , V(x,mu) ) );
+    tmp = tmp * Hermite( V(xn,mu) );
+    tmp = tmp * Hermite( S(x,nu,mu,-1) );
+    tmp = tmp * V(x,mu);
+    ans += __real__( Trace(tmp) );
   }
   /*    
   for( const auto& m : HPE_comb::P3 ){
@@ -227,8 +240,9 @@ double W12_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
     Site xn = x + nu;
     for( int s : {-1,1} ){
       tmp = V(x,mu) * S(xm,nu,rho,s);
-      tmp = tmp * Hermite(V(xn,mu));
-      ans += __real__( TraceProd( tmp , Hermite(S(x,nu,rho,s)) ) );
+      tmp = tmp * Hermite( V(xn,mu) );
+      tmp = tmp * Hermite( S(x,nu,rho,s) );
+      ans += __real__( Trace(tmp) );
     }
   }
   return -32. * ans;
@@ -244,8 +258,9 @@ double W13_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
     Site xn = x + nu;
     for( int s : {-1,1} ){
       tmp = V(x,mu) * S(xm,nu,rho,s);
-      tmp = tmp * Hermite(V(xn,mu));
-      ans += __real__( TraceProd( tmp , Hermite(S(x,nu,rho,-s)) ) );
+      tmp = tmp * Hermite( V(xn,mu) );
+      tmp = tmp * Hermite( S(x,nu,rho,-s) );
+      ans += __real__( Trace(tmp) );
     }
   }
   return -32. * ans;
@@ -258,12 +273,14 @@ double W14_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
   for( const auto& m : HPE_comb::P3 ){
     const int mu=m[0] , nu=m[1] , rho=m[2];
     Site xm = x - mu;
-    tmp = LE.P(mu,nu,1,1) * Hermite(S(xm,mu,nu,1));
-    tmp += LE.P(mu,nu,1,-1) * Hermite(S(xm,mu,nu,-1));
-    ans += __real__( TraceProd( tmp , S(xm,mu,rho,0) ) );
+    tmp = LE.P(mu,nu,1,1) * Hermite( S(xm,mu,nu,1) );
+    tmp += LE.P(mu,nu,1,-1) * Hermite( S(xm,mu,nu,-1) );
+    tmp = tmp * S(xm,mu,rho,0);
+    ans += __real__( Trace(tmp) );
     tmp = LE.P(mu,nu,-1,1) * S(x,mu,nu,1);
     tmp += LE.P(mu,nu,-1,-1) * S(x,mu,nu,-1);
-    ans += __real__( TraceProd( tmp , Hermite(S(x,mu,rho,0)) ) );
+    tmp = tmp * Hermite( S(x,mu,rho,0) );
+    ans += __real__( Trace(tmp) );
   }
   return -32. * ans;
 }
@@ -278,7 +295,8 @@ double W15_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
       for( int sn : {-1,1} ){
 	tmp = LE.P(nu,rho,sn,-1) * LE.P(rho,mu,1,sm);
 	tmp += LE.P(nu,rho,sn,1) * LE.P(rho,mu,-1,sm);
-	ans += __real__( TraceProd( tmp , LE.P(mu,nu,sm,sn) ) );
+	tmp = tmp * LE.P(mu,nu,sm,sn);
+	ans += __real__( Trace(tmp) );
       }
     }
   }
@@ -291,10 +309,11 @@ double W16_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
   double ans = 0.;
   for( const auto& m : HPE_comb::C2P2 ){
     const int mu=m[0] , nu=m[1] , rho=m[2];
-    ans += __real__( TraceProd( LE.Sig(mu,nu,rho, 1, 1,1) , LE.Sig(nu,mu,rho,-1,-1,-1) ) );
-    ans += __real__( TraceProd( LE.Sig(mu,nu,rho,-1, 1,1) , LE.Sig(nu,mu,rho,-1, 1,-1) ) );
-    ans += __real__( TraceProd( LE.Sig(mu,nu,rho,-1,-1,1) , LE.Sig(nu,mu,rho, 1, 1,-1) ) );
-    ans += __real__( TraceProd( LE.Sig(mu,nu,rho, 1,-1,1) , LE.Sig(nu,mu,rho, 1,-1,-1) ) );
+    tmp = LE.Sig(mu,nu,rho, 1, 1,1) * LE.Sig(nu,mu,rho,-1,-1,-1);
+    tmp+= LE.Sig(mu,nu,rho,-1, 1,1) * LE.Sig(nu,mu,rho,-1, 1,-1);
+    tmp+= LE.Sig(mu,nu,rho,-1,-1,1) * LE.Sig(nu,mu,rho, 1, 1,-1);
+    tmp+= LE.Sig(mu,nu,rho, 1,-1,1) * LE.Sig(nu,mu,rho, 1,-1,-1);
+    ans += __real__( Trace(tmp) );
   }
   return -64. * ans;
 }
@@ -305,12 +324,13 @@ double W17_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
   double ans = 0.;
   for( const auto& m : HPE_comb::C2P2 ){
     const int mu=m[0] , nu=m[1] , rho=m[2];
-    ans += __real__( TraceProd( LE.Sig(mu,nu,rho, 1, 1,1) , LE.Sig(mu,nu,rho,-1,-1,-1) ) );
-    ans += __real__( TraceProd( LE.Sig(mu,nu,rho, 1,-1,1) , LE.Sig(mu,nu,rho,-1, 1,-1) ) );
-    ans += __real__( TraceProd( LE.Sig(mu,nu,rho,-1, 1,1) , LE.Sig(mu,nu,rho, 1,-1,-1) ) );
-    ans += __real__( TraceProd( LE.Sig(mu,nu,rho,-1,-1,1) , LE.Sig(mu,nu,rho, 1, 1,-1) ) );    
+    tmp = LE.Sig(mu,nu,rho, 1, 1,1) * LE.Sig(mu,nu,rho,-1,-1,-1);
+    tmp+= LE.Sig(mu,nu,rho, 1,-1,1) * LE.Sig(mu,nu,rho,-1, 1,-1);
+    tmp+= LE.Sig(mu,nu,rho,-1, 1,1) * LE.Sig(mu,nu,rho, 1,-1,-1);
+    tmp+= LE.Sig(mu,nu,rho,-1,-1,1) * LE.Sig(mu,nu,rho, 1, 1,-1);
+    ans += -64.* __real__( Trace(tmp) );
   }
-  return -64. * ans;
+  return ans;
 }
 
 double W18_local( const Gauge& V , const SingleStaple& S , const LocalElements& LE , const Site& x , double _Complex *Uptr )
@@ -326,28 +346,32 @@ double W18_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
     tmp1 = LE.Sig(mu,nu,rho,-1,-1,1) + LE.Sig(mu,nu,rho,-1,-1,-1);
     tmp1+= LE.Sig(mu,nu,sig,-1,-1,1);
     tmp1+= LE.Sig(mu,nu,sig,-1,-1,-1);
-    ans += __real__( TraceProd( tmp , tmp1 ) );
+    tmp  = tmp * tmp1;
+    ans += __real__( Trace(tmp) );
 
     tmp  = S(xm,nu,mu,1) * Hermite(V(xn,mu));
     tmp += V(xm,nu) * Hermite(S(xn,mu,nu,1));
     tmp1 = LE.Sig(mu,nu,rho,1,-1,1) + LE.Sig(mu,nu,rho,1,-1,-1);
     tmp1+= LE.Sig(mu,nu,sig,1,-1,1);
     tmp1+= LE.Sig(mu,nu,sig,1,-1,-1);
-    ans += __real__( TraceProd( tmp , tmp1 ) );
+    tmp  = tmp * tmp1;
+    ans += __real__( Trace(tmp) );
 
     tmp  = Hermite(S(xn,mu,nu,1)) * Hermite(V(x,nu));
     tmp += Hermite(V(xn,mu)) * Hermite(S(x,nu,mu,-1));
     tmp1 = LE.Sig(mu,nu,rho,1,1,1) + LE.Sig(mu,nu,rho,1,1,-1);
     tmp1+= LE.Sig(mu,nu,sig,1,1,1);
     tmp1+= LE.Sig(mu,nu,sig,1,1,-1);
-    ans += __real__( TraceProd( tmp , tmp1 ) );
+    tmp  = tmp * tmp1;
+    ans += __real__( Trace(tmp) );
 
     tmp  = Hermite(V(x,nu)) * S(x,mu,nu,-1);
     tmp += Hermite(S(x,nu,mu,-1)) * V(x,mu);
     tmp1 = LE.Sig(mu,nu,rho,-1,1,1) + LE.Sig(mu,nu,rho,-1,1,-1);
     tmp1+= LE.Sig(mu,nu,sig,-1,1,1);
     tmp1+= LE.Sig(mu,nu,sig,-1,1,-1);
-    ans += __real__( TraceProd( tmp , tmp1 ) );
+    tmp  = tmp * tmp1;
+    ans += __real__( Trace(tmp) );
   }
   return -32. * ans;
 }
@@ -367,7 +391,8 @@ double W19_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
     tmp1+= LE.P(rho,sig,-1,1);
     tmp1+= LE.P(rho,sig,-1,-1);
     tmp1 += Hermite(tmp1);
-    ans += __real__( TraceProd( tmp , tmp1 ) );
+    tmp  = tmp * tmp1;
+    ans += __real__( Trace(tmp) );
   }
   return 16. * ans;
 }
@@ -381,8 +406,9 @@ double W20_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
   Site xm = x + mu;
   Site xn = x + nu;
   tmp = V(x,mu) * S(xm,nu,rho,0);
-  tmp = tmp * Hermite(V(xn,mu));
-  ans += __real__( TraceProd( tmp , Hermite(S(x,nu,sig,0)) ) );
+  tmp = tmp * Hermite( V(xn,mu) );
+  tmp = tmp * Hermite( S(x,nu,sig,0));
+  ans += __real__( Trace(tmp) );
   }
   return -32. * ans;
 }
@@ -401,19 +427,23 @@ double W21_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
       tmp  = Hermite(S(xn,mu,rho,0)) * Hermite(S(x,nu,sig,0));
       tmp += Hermite(S(xn,mu,sig,0)) * Hermite(S(x,nu,rho,0));
       tmp  = tmp * V(x,mu);
-      ans += __real__( TraceProd( tmp , V(xm,nu) ) );
+      tmp  = tmp * V(xm,nu);
+      ans += __real__( Trace(tmp) );
       tmp  = Hermite(S(x,nu,rho,0)) * S(x,mu,sig,0);
       tmp += Hermite(S(x,nu,sig,0)) * S(x,mu,rho,0);
       tmp  = tmp * V(xm,nu);
-      ans += __real__( TraceProd( tmp , Hermite(V(xn,mu)) ) );
+      tmp  = tmp * Hermite(V(xn,mu));
+      ans += __real__( Trace(tmp) );
       tmp  = S(x,mu,rho,0) * S(xm,nu,sig,0);
       tmp += S(x,mu,sig,0) * S(xm,nu,rho,0);
       tmp = tmp * Hermite(V(xn,mu));
-      ans += __real__( TraceProd( tmp , Hermite(V(x,nu)) ) );
+      tmp = tmp * Hermite(V(x,nu));
+      ans += __real__( Trace(tmp) );
       tmp = S(xm,nu,rho,0) * Hermite(S(xn,mu,sig,0));
       tmp += S(xm,nu,sig,0) * Hermite(S(xn,mu,rho,0));
       tmp = tmp * Hermite(V(x,nu));
-      ans += __real__( TraceProd( tmp , V(x,mu) ) );
+      tmp = tmp * V(x,mu);
+      ans += __real__( Trace(tmp) );
     }
   }
   return -16. * ans;
@@ -429,16 +459,20 @@ double W22_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
   Site xn = x - nu;
   tmp1 = LE.Sig(mu,nu,rho,1,-1,1) + LE.Sig(mu,nu,rho,1,-1,-1);
   tmp = LE.Sig(nu,mu,sig,1,-1,1) + LE.Sig(nu,mu,sig,1,-1,-1);
-  ans += __real__( TraceProd( tmp , tmp1 ) );
+  tmp = tmp * tmp1;
+  ans += __real__( Trace(tmp) );
   tmp1 = LE.Sig(mu,nu,rho,1,1,1) + LE.Sig(mu,nu,rho,1,1,-1);
   tmp = LE.Sig(nu,mu,sig,-1,-1,1) + LE.Sig(nu,mu,sig,-1,-1,-1);
-  ans += __real__( TraceProd( tmp , tmp1 ) );
+  tmp = tmp * tmp1;
+  ans += __real__( Trace(tmp) );
   tmp1 = LE.Sig(mu,nu,rho,-1,1,1) + LE.Sig(mu,nu,rho,-1,1,-1);
   tmp = LE.Sig(nu,mu,sig,-1,1,1) + LE.Sig(nu,mu,sig,-1,1,-1);
-  ans += __real__( TraceProd( tmp , tmp1 ) );
+  tmp = tmp * tmp1;
+  ans += __real__( Trace(tmp) );
   tmp1 = LE.Sig(mu,nu,rho,-1,-1,1) + LE.Sig(mu,nu,rho,-1,-1,-1);
   tmp = LE.Sig(nu,mu,sig,1,1,1) + LE.Sig(nu,mu,sig,1,1,-1);
-  ans += __real__( TraceProd( tmp , tmp1 ) );
+  tmp = tmp * tmp1;
+  ans += __real__( Trace(tmp) );
   }
  return -32. * ans;
 }
@@ -453,10 +487,12 @@ double W23_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
   Site xn = x + nu;
   tmp1 = LE.Sig(mu,nu,rho,1,1,1) + LE.Sig(mu,nu,rho,1,1,-1);
   tmp = LE.Sig(mu,nu,sig,-1,-1,1) + LE.Sig(mu,nu,sig,-1,-1,-1);
-  ans += __real__( TraceProd( tmp , tmp1 ) );
+  tmp = tmp * tmp1;
+  ans += __real__( Trace(tmp) );
   tmp1 = LE.Sig(mu,nu,rho,-1,1,1) + LE.Sig(mu,nu,rho,-1,1,-1);
   tmp = LE.Sig(mu,nu,sig,1,-1,1) + LE.Sig(mu,nu,sig,1,-1,-1);
-  ans += __real__( TraceProd( tmp , tmp1 ) );
+  tmp = tmp * tmp1;
+  ans += __real__( Trace(tmp) );
   }
   return -32. * ans;
 }
@@ -471,19 +507,23 @@ double W24_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
     Site xn = x + nu;
     tmp = LE.Sig(mu,nu,rho,-1,-1,1) + LE.Sig(mu,nu,rho,-1,-1,-1);
     tmp = tmp * S(x,mu,sig,0);
-    ans += __real__( TraceProd( tmp , V(xm,nu) ) );
+    tmp = tmp * V(xm,nu);
+    ans += __real__( Trace(tmp) );
 
     tmp = LE.Sig(mu,nu,rho,1,-1,1) + LE.Sig(mu,nu,rho,1,-1,-1);
     tmp = tmp * V(xm,nu);
-    ans += __real__( TraceProd( tmp , Hermite(S(xn,mu,sig,0)) ) );
+    tmp = tmp * Hermite( S(xn,mu,sig,0) );
+    ans += __real__( Trace(tmp) );
 
     tmp = LE.Sig(mu,nu,rho,1,1,1) + LE.Sig(mu,nu,rho,1,1,-1);
-    tmp  = tmp * Hermite(S(xn,mu,sig,0));
-    ans += __real__( TraceProd( tmp , Hermite(V(x,nu)) ) );
+    tmp  = tmp * Hermite( S(xn,mu,sig,0) );
+    tmp  = tmp * Hermite( V(x,nu) );
+    ans += __real__( Trace(tmp) );
 
     tmp = LE.Sig(mu,nu,rho,-1,1,1) + LE.Sig(mu,nu,rho,-1,1,-1);
-    tmp  = tmp * Hermite(V(x,nu));
-    ans += __real__( TraceProd( tmp , S(x,mu,sig,0) ) );
+    tmp  = tmp * Hermite( V(x,nu) );
+    tmp  = tmp * S(x,mu,sig,0);
+    ans += __real__( Trace(tmp) );
   }
   return -16. * ans;
 }
@@ -503,7 +543,8 @@ double W25_local( const Gauge& V , const SingleStaple& S , const LocalElements& 
     tmp1 = Hermite(S(xn-rho,rho,sig,-1)) * Hermite(S(xr,nu,mu,-1));
     tmp += tmp1 * S(xr,rho,mu,-1);
     tmp = tmp * LE.P(mu,sig,-1,-1);
-    ans += __real__( TraceProd( tmp , S(x,nu,sig,-1) ) );
+    tmp = tmp * S(x,nu,sig,-1);
+    ans += __real__( Trace(tmp) );
   }
   return -16. * ans;
 }
