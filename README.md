@@ -34,14 +34,11 @@ This repository contains two parts:
 loop_classification/   per-length Wilson/Polyakov loop enumeration, classification & γ-trace (Julia, runnable)
   src/ scripts/ README.md
 
-NNLO_human/            NNLO staple operators + shared loop/utility headers (C++)
-  nnlo_w.cpp           W1..W25 Wilson-type operators (NNLO_W)
-  nnlo_p4.cpp          Polyakov-type operators (NNLO_P4L1/L2)
-  single_staple.cpp    SingleStaple cache ;  local_elem.cpp  local elements
-  nnlo.cpp             bundles single_staple/local_elem/nnlo_w/nnlo_p4
-  nnlo_safe.cpp        W8traj/W10traj, MakeTrajList, cyclic_symmetry ;  calc_hpe.cpp  CalcHPE
-  rectangle.hpp chair.hpp crown.hpp polyakov_loop(_bend) staple_pol gauge_io_mult
-  gauge_update_routines_pol stopwatch.hpp   (shared loop/utility headers)
+NNLO_human/            Human-developed history (C++)
+
+misc/
+  AGENTS.md            Instruction file used for the initial AI-assisted development of the N^3LO calculation (Japanese language)
+  nnnlo_v3.cpp         First output from Codex/ChatGPT 5.5
 
 src/
   hpe_meas.cpp         trie engine (HPE_W6/8/10, HPE_P6/8/10; meet-in-the-middle)

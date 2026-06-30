@@ -600,28 +600,3 @@ double NNLO_W( const Gauge& V , const SingleStaple& S ){
   return -2. * ans / V.lattice().size();
 }
 
-double NNLO_W( const Gauge& V ){
-  using Wfunc = double(*)( const Gauge& , const SingleStaple& , const LocalElements& , const Site& , double _Complex* );
-  Wfunc Wlist[] = { 
-    W1_local , W2_local , W3_local , W4_local , W5_local ,
-    W6_local , W7_local , W8_local , W9_local , 
-    W11_local , W12_local , W13_local , W14_local , W15_local ,
-    W16_local , W17_local , W18_local , W19_local , W20_local ,
-    W21_local , W22_local , W23_local , W24_local , W25_local 
-  };
-  const SingleStaple& S(V);  
-  double ans = 0.;
-#pragma omp parallel reduction( + : ans )
-  {
-    double _Complex ptr[27];
-    Site x(V.lattice());
-    ForAllSitesOMP(x){
-      LocalElements LE( V , S , x );
-      for( auto& func : Wlist )
-        ans += func( V , S , LE , x , ptr );
-    }
-  }
-  mpi.add(ans);
-  return -2. * ans / V.lattice().size();
-}
-

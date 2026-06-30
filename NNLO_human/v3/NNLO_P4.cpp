@@ -619,38 +619,8 @@ double _Complex NNLO_P4( const Gauge& V , const SingleStaple& S )
       if( x(0) == 0 )
 	for( auto func : Plist_t0 )
 	  ans += func( V , S , x , ptr );
-      for( auto func : Plist_t_ne0 )
-	ans += func( V , S , x , ptr );
-    }
-  }
-  double _Complex tmp;
-  MPI_Allreduce( (void*)&ans , (void*)&tmp , 1 ,
-		 MPI_DOUBLE_COMPLEX , MPI_SUM , MPI_COMM_WORLD );
-  return 2. * tmp / V.lattice().size();
-}
-
-double _Complex NNLO_P4( const Gauge& V )
-{
-  using Pfunc = double _Complex(*)( const Gauge& , const SingleStaple& , const Site& , double _Complex* );
-  Pfunc Plist_t_ne0[] = { 
-    P2_local , P3_20_local , P4_5_6_21_22_23local ,
-    P7_24_local , P8_local , P10_local ,
-    P16_local , P17_local , P18_local , P19_local , 
-    P25_local
-  };
-  Pfunc Plist_t0[] = { P1_local , P9_local };
-  const SingleStaple& S(V);
-  double _Complex ans = 0.;
-#pragma omp parallel reduction( + : ans )
-  {
-    double _Complex ptr[27];
-    Site x(V.lattice());
-    ForAllSitesOMP(x){
-      if( x(0) == 0 )
-	for( auto func : Plist_t0 )
+	for( auto func : Plist_t_ne0 )
 	  ans += func( V , S , x , ptr );
-      for( auto func : Plist_t_ne0 )
-	ans += func( V , S , x , ptr );
     }
   }
   double _Complex tmp;
@@ -658,51 +628,3 @@ double _Complex NNLO_P4( const Gauge& V )
 		 MPI_DOUBLE_COMPLEX , MPI_SUM , MPI_COMM_WORLD );
   return 2. * tmp / V.lattice().size();
 }
-
-double _Complex NNLO_P4L1( const Gauge& V , const SingleStaple& S )
-{
-  using Pfunc = double _Complex(*)( const Gauge& , const SingleStaple& , const Site& , double _Complex* );
-  Pfunc Plist_t_ne0[] = { 
-    P2_local , P3_20_local , P4_5_6_21_22_23local ,
-    P7_24_local , P8_local , P10_local ,
-    P16_local , P17_local , P18_local , P19_local , 
-    P25_local
-  };
-  Pfunc Plist_t0[] = { P9_local };
-  double _Complex ans = 0.;
-#pragma omp parallel reduction( + : ans )
-  {
-    double _Complex ptr[27];
-    Site x(V.lattice());
-    ForAllSitesOMP(x){
-      if( x(0) == 0 )
-	for( auto func : Plist_t0 )
-	  ans += func( V , S , x , ptr );
-      for( auto func : Plist_t_ne0 )
-	ans += func( V , S , x , ptr );
-    }
-  }
-  double _Complex tmp;
-  MPI_Allreduce( (void*)&ans , (void*)&tmp , 1 ,
-		 MPI_DOUBLE_COMPLEX , MPI_SUM , MPI_COMM_WORLD );
-  return 2. * tmp / V.lattice().size();
-}
-
-double _Complex NNLO_P4L2( const Gauge& V , const SingleStaple& S )
-{
-  double _Complex ans = 0.;
-#pragma omp parallel reduction( + : ans )
-  {
-    double _Complex ptr[27];
-    Site x(V.lattice());
-    ForAllSitesOMP(x){
-      if( x(0) == 0 )
-	ans += P1_local(V,S,x,ptr);
-    }
-  }
-  double _Complex tmp;
-  MPI_Allreduce( (void*)&ans , (void*)&tmp , 1 ,
-		 MPI_DOUBLE_COMPLEX , MPI_SUM , MPI_COMM_WORLD );
-  return 2. * tmp / V.lattice().size();
-}
-

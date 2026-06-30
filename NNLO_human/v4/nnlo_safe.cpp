@@ -1,6 +1,5 @@
 #include <algorithm>
 #include "nnlo_traj_list.cpp" 
-#include "n3lo_traj_list.cpp" 
 
 int cyclic_symmetry(const std::vector<int>& traj)
 {
@@ -128,7 +127,7 @@ double _Complex Safe_local1( const Gauge& V , const Site& x , const std::vector<
   double _Complex ans = 0.;
   //for(int y : traj) std::cout << y << ' ';
   //std::cout << '\n';
-  /*
+
   for( int origin=0 ; origin<len ; origin++ ){
     auto xh = x;
     tmp = 1.;
@@ -147,38 +146,6 @@ double _Complex Safe_local1( const Gauge& V , const Site& x , const std::vector<
     }
     ans += Trace(tmp) / (double)len;
   }
-  */
-  auto xh = x;
-  tmp = 1.;
-  for( int n=0 ; n<len ; n++ ){
-    const int dir = traj[n];
-    const int mu = std::abs(dir) % 4;//(1,2,3,4)-->(1,2,3,0)
-    if( dir>0 ){
-      tmp = tmp * V(xh,mu);
-      xh = xh + mu;
-    }
-    else{
-      xh = xh - mu;
-      tmp = tmp * Hermite(V(xh,mu));
-    }
-  }
-  ans += Trace(tmp) / (double)len;
-  for( int n=0 ; n<len-1 ; n++ ){
-    const int dir = traj[n];
-    const int mu = std::abs(dir) % 4;//(1,2,3,4)-->(1,2,3,0)
-    if( dir>0 ){
-      tmp = Hermite(V(xh,mu)) * tmp;
-      tmp = tmp * V(xh,mu);
-      xh = xh + mu;
-    }
-    else{
-      xh = xh - mu;
-      tmp = V(xh,mu) * tmp;
-      tmp = tmp * Hermite(V(xh,mu));
-    }
-    ans += Trace(tmp) / (double)len;
-  }
-  
   return ans;
 }
 
@@ -197,11 +164,10 @@ double _Complex TrajSum_safe( const Gauge& V , const vector<vector<int>> trajlis
   return -2. * ans / V.lattice().size();
 }
 
-std::array<double,25> NNLO_W_safe_decomp( const Gauge& V , bool disp=false )
+std::array<double,25> NNLO_W_safe_decomp( const Gauge& V , bool disp=true )
 {
   std::array<double,25> ans;
   for( int i=0 ; i<25 ; i++ ){
-    if( W8D[i]==0 ) continue;
     ans[i] = __real__(TrajSum_safe( V , MakeTrajList(W8traj[i])) ) * W8D[i];
     ans[i] /= cyclic_symmetry(W8traj[i]);
     if(disp) mpicout << i+1 << " " << ans[i] << " / ";
@@ -210,11 +176,10 @@ std::array<double,25> NNLO_W_safe_decomp( const Gauge& V , bool disp=false )
   return ans;
 }
 
-double NNLO_W_safe( const Gauge& V , bool disp=false )
+double NNLO_W_safe( const Gauge& V , bool disp=true )
 {
   double ans = 0.;
   for( int i=0 ; i<25 ; i++ ){
-    if( W8D[i]==0 ) continue;
     double tmp = __real__(TrajSum_safe( V , MakeTrajList(W8traj[i])) );
     tmp *= W8D[i] / cyclic_symmetry(W8traj[i]);
     ans += tmp;
@@ -224,11 +189,10 @@ double NNLO_W_safe( const Gauge& V , bool disp=false )
   return ans;
 }
 
-std::array<double _Complex,25> NNLO_P4_safe_decomp( const Gauge& V , bool disp=false )
+std::array<double _Complex,25> NNLO_P_safe_decomp( const Gauge& V , bool disp=true )
 {
   std::array<double _Complex,25> ans;
   for( int i=0 ; i<25 ; i++ ){
-    if( P8Nt4D[i]==0 ) continue;
     ans[i] = -TrajSum_safe( V , MakeTrajListP(P8Nt4traj[i]) ) * P8Nt4D[i];
     ans[i] /= cyclic_symmetry(P8Nt4traj[i]);
     if(disp) mpicout << i+1 << " " << ans[i] << " / ";
@@ -237,11 +201,10 @@ std::array<double _Complex,25> NNLO_P4_safe_decomp( const Gauge& V , bool disp=f
   return ans;
 }
 
-double _Complex NNLO_P4_safe( const Gauge& V , bool disp=false )
+double _Complex NNLO_P_safe( const Gauge& V , bool disp=true )
 {
-  double _Complex ans = 0.;
+  double _Complex ans;
   for( int i=0 ; i<25 ; i++ ){
-    if( P8Nt4D[i]==0 ) continue;
     double _Complex tmp = -TrajSum_safe( V , MakeTrajListP(P8Nt4traj[i]) );
     tmp *= P8Nt4D[i] / cyclic_symmetry(P8Nt4traj[i]);
     ans += tmp;
@@ -251,118 +214,29 @@ double _Complex NNLO_P4_safe( const Gauge& V , bool disp=false )
   return ans;
 }
 
-double _Complex NNLO_P4L1_safe( const Gauge& V , bool disp=false )
+void TrajList()
 {
-  double _Complex ans = 0.;
-  for( int i=0 ; i<25 ; i++ ){
-    if( P8Nt4D[i]==0 ) continue;
-    const auto traj = P8Nt4traj[i];
-    if( std::count(traj.begin(), traj.end(), 4) != 4 ) continue;
-    double _Complex tmp = -TrajSum_safe( V , MakeTrajListP(traj) );
-    tmp *= P8Nt4D[i] / cyclic_symmetry(traj);
-    ans += tmp;
-    if(disp) mpicout << i+1 << " " << tmp << " / ";
-  }
-  if(disp) mpicout << endl;
-  return ans;
-}
-
-double _Complex NNLO_P4L2_safe( const Gauge& V , bool disp=false )
-{
-  double _Complex ans = 0.;
-  for( int i=0 ; i<25 ; i++ ){
-    if( P8Nt4D[i]==0 ) continue;
-    const auto traj = P8Nt4traj[i];
-    if( std::count(traj.begin(), traj.end(), 4) != 4 ) continue;
-    double _Complex tmp = -TrajSum_safe( V , MakeTrajListP(traj) );
-    tmp *= P8Nt4D[i] / cyclic_symmetry(traj);
-    ans += tmp;
-    if(disp) mpicout << i+1 << " " << tmp << " / ";
-  }
-  if(disp) mpicout << endl;
-  return ans;
-}
-
-double _Complex NNLO_W10_safe( const Gauge& V , bool disp=false )
-{
-  double _Complex ans = 0.;
-  for( int i=0 ; i<W10traj.size() ; i++ ){
-    if( W10D[i]==0 ) continue;
-    double tmp = __real__(TrajSum_safe( V , MakeTrajList(W10traj[i])) );
-    tmp *= W10D[i] / cyclic_symmetry(W10traj[i]);
-    ans += tmp;
-    if(disp) mpicout << i+1 << " " << tmp << " / ";
-  }
-  if(disp) mpicout << endl;
-  return ans;
-}
-
-void TrajList8()
-{
-  int sumW = 0;
-  double sum_tr = 0.;
   mpicout << "W:" << endl;
   for( int i=0 ; i<25 ; i++ ){
     const auto& traj = W8traj[i];
-    const int Ntraj = MakeTrajList(traj).size();
-    const int Ndeg = cyclic_symmetry(traj);
-    const int D = W8D[i];
-    const int free = -6 * Ntraj * D / Ndeg;
     mpicout << i+1 << ": ";
     for(int t : traj)
       mpicout << t << ' ';
     mpicout << " : "
-	    << Ntraj << " "
-	    << Ndeg << " "
-	    << D << " "
-	    << free << endl;
-    sumW += free;
-    if(D) sum_tr += (double)Ntraj / Ndeg;
+	    << MakeTrajList(traj).size() << " "
+	    << cyclic_symmetry(traj) << " "
+	    << W8D[i] << endl;
   }
-  mpicout << "sum = " << sumW;
-  //This value should be 245952
-  mpicout << " / sum_traj = " << sum_tr << endl;
 
-  sumW = 0 , sum_tr = 0.;
   mpicout << "P:" << endl;
   for( int i=0 ; i<25 ; i++ ){
     const auto& traj = P8Nt4traj[i];
-    const int Ntraj = MakeTrajListP(traj).size();
-    const int Ndeg = cyclic_symmetry(traj);
-    const int D = P8Nt4D[i];
-    const int free = 6 * Ntraj * D / Ndeg;
     mpicout << i+1 << ": ";
     for(int t : traj)
       mpicout << t << ' ';
     mpicout << " : "
-	    << Ntraj << " "
-	    << Ndeg << " "
-	    << D << " "
-	    << free << endl;
-    sumW += free;
-    if(D) sum_tr += (double)Ntraj / Ndeg;
+	    << MakeTrajListP(traj).size() << " "
+	    << cyclic_symmetry(traj) << " "
+	    << P8Nt4D[i] << endl;
   }
-  mpicout << "sum = " << sumW;
-  //This value should be 45408
-  mpicout << " / sum_traj = " << sum_tr << endl;
-}
-
-void TrajList10()
-{
-  int sumW = 0;
-  double sum_tr = 0.;
-  mpicout << "W:" << endl;
-  int N = W10traj.size();
-  for( int i=0 ; i<N ; i++ ){
-    const auto& traj = W10traj[i];
-    const int Ntraj = MakeTrajList(traj).size();
-    const int Ndeg = cyclic_symmetry(traj);
-    const int D = W10D[i];
-    const int free = -6 * Ntraj * D / Ndeg;
-    sumW += free;
-    if(D) sum_tr += (double)Ntraj / Ndeg;
-  }
-  mpicout << "sum = " << sumW;
-  //This value should be 7372800
-  mpicout << " / sum_traj = " << sum_tr << endl;
 }
