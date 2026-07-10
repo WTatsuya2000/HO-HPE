@@ -126,60 +126,30 @@ double _Complex Safe_local1( const Gauge& V , const Site& x , const std::vector<
   double _Complex Uptr[9];
   Matrix<3,3> tmp( Uptr );
   double _Complex ans = 0.;
-  //for(int y : traj) std::cout << y << ' ';
-  //std::cout << '\n';
-  /*
-  for( int origin=0 ; origin<len ; origin++ ){
-    auto xh = x;
-    tmp = 1.;
-    for( int n=0 ; n<len ; n++ ){
-      const int index = ( origin + n ) % len;
-      const int dir = traj[index];
-      const int mu = std::abs(dir) % 4;//(1,2,3,4)-->(1,2,3,0)
-      if( dir>0 ){
-	tmp = tmp * V(xh,mu);
-	xh = xh + mu;
-      }
-      else{
-	xh = xh - mu;
-	tmp = tmp * Hermite(V(xh,mu));
-      }
-    }
-    ans += Trace(tmp) / (double)len;
-  }
-  */
   auto xh = x;
   tmp = 1.;
-  for( int n=0 ; n<len ; n++ ){
-    const int dir = traj[n];
-    const int mu = std::abs(dir) % 4;//(1,2,3,4)-->(1,2,3,0)
-    if( dir>0 ){
-      tmp = tmp * V(xh,mu);
-      xh = xh + mu;
-    }
-    else{
-      xh = xh - mu;
-      tmp = tmp * Hermite(V(xh,mu));
-    }
-  }
-  ans += Trace(tmp) / (double)len;
+  // Corrected 2026 Jul 10, by MK
   for( int n=0 ; n<len-1 ; n++ ){
     const int dir = traj[n];
     const int mu = std::abs(dir) % 4;//(1,2,3,4)-->(1,2,3,0)
     if( dir>0 ){
-      tmp = Hermite(V(xh,mu)) * tmp;
       tmp = tmp * V(xh,mu);
       xh = xh + mu;
     }
     else{
       xh = xh - mu;
-      tmp = V(xh,mu) * tmp;
       tmp = tmp * Hermite(V(xh,mu));
     }
-    ans += Trace(tmp) / (double)len;
   }
-  
-  return ans;
+  const int dir = traj[len-1];
+  const int mu = std::abs(dir) % 4;//(1,2,3,4)-->(1,2,3,0)
+  if( dir>0 ){
+    return TraceProd( tmp , V(xh,mu) );
+  }
+  else{
+    xh = xh - mu;
+    return TraceProd( tmp , Hermite(V(xh,mu)) );
+  }
 }
 
 double _Complex TrajSum_safe( const Gauge& V , const vector<vector<int>> trajlist )
