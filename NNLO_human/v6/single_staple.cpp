@@ -30,20 +30,15 @@ public:
         Site x( V.lattice() );
         ForAllSitesOMP(x){
             for( int mu : {0,1,2,3} ){
-	        const Site xm = x-mu;
-                for( int nu=mu+1 ; nu<4 ; nu++ ){
-                    const Site xn = x - nu;
-		    tmp = V(x+mu,nu) * Hermite(V(x+nu,mu));
-                    (*this)(x,mu,nu,1) = V(x,nu) * Hermite(tmp);
-                    (*this)(x,nu,mu,1) = V(x,mu) * tmp;
-
+                for( int nu : {0,1,2,3} ){
+                    if( mu == nu ) continue;
+                    Site xn = x - nu;
+                    tmp = V(x,nu) * V(x+nu,mu);
+                    (*this)(x,mu,nu,1) = tmp * Hermite( V(x+mu,nu) );
                     tmp = Hermite( V(xn,nu) ) * V(xn,mu);
                     (*this)(x,mu,nu,-1) = tmp * V(xn+mu,nu);
-                    tmp = Hermite( V(xm,mu) ) * V(xm,nu);
-                    (*this)(x,nu,mu,-1) = tmp * V(xm+nu,mu);
 
 		    (*this)(x,mu,nu,0) = (*this)(x,mu,nu,1) + (*this)(x,mu,nu,-1);
-		    (*this)(x,nu,mu,0) = (*this)(x,nu,mu,1) + (*this)(x,nu,mu,-1);
                 }
             }
         }

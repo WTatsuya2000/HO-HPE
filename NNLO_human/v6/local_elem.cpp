@@ -6,8 +6,8 @@ public:
     Calc_Plaquette( V , S , x );
     Calc_Sigma( V , S , x );
   }
-  mutable COMPLEX plaq[9*12*9];
-  mutable COMPLEX sigma[9*12*2*4*2*3];
+  mutable COMPLEX plaq[9*12*4];
+  mutable COMPLEX sigma[9*12*2*4*2*2];
 
   //Matrix<3,3> P( int mu , int nu , int smu , int snu ){
   //  return Matrix<3,3>( plaq + index(mu,nu,smu,snu) );
@@ -43,16 +43,16 @@ public:
       {-1,-1,-1,-1} }
   };
   int idx_sign( int s1 , int s2 ) const {
-    return 3 * (s1+1) + (s2+1);
+    return 2 * (s1==1) + (s2==1);
   }
   int index( int mu , int nu , int smu , int snu ) const {
-    return 9 * ( 9 * idx2[mu][nu] + this->idx_sign(smu,snu) );
+    return 9 * ( 4 * idx2[mu][nu] + this->idx_sign(smu,snu) );
   }
   int idx_sign( int s1 , int s2 , int s3 ) const {
-    return 6 * (s1==1) + 3 * (s2==1) + (s3+1);
+    return 4 * (s1==1) + 2 * (s2==1) + (s3==1);
   }
   int index( int mu , int nu , int rho , int smu , int snu , int srho ) const {
-    return 9 * ( 12 * idx3[mu][nu][rho] + this->idx_sign(smu,snu,srho) );
+    return 9 * ( 8 * idx3[mu][nu][rho] + this->idx_sign(smu,snu,srho) );
   }
     
   //        nu
@@ -70,29 +70,21 @@ public:
 	     const Site& x ){
     double _Complex ptr[9];
     Matrix<3,3> tmp(ptr);
-    auto P = [&](int mu,int nu,int sm,int sn){
-      return Matrix<3,3>(plaq+index(mu,nu,sm,sn));
-    };
     for( int mu=0 ; mu<4 ; mu++ ){
       Site xm = x - mu;
       for( int nu=mu+1 ; nu<4 ; nu++ ){
-	P(mu,nu, 1, 1) = V(x,mu) * Hermite(S(x,mu,nu,1));
-	P(nu,mu, 1, 1) = Hermite(P(mu,nu,1,1));
-	P(mu,nu, 1,-1) = V(x,mu) * Hermite(S(x,mu,nu,-1));
-	P(nu,mu,-1, 1) = Hermite(P(mu,nu,1,-1));
-	P(mu,nu,-1, 1) = Hermite(V(xm,mu)) * S(xm,mu,nu,1);
-	P(nu,mu, 1,-1) = Hermite(P(mu,nu,-1,1));
-	P(mu,nu,-1,-1) = Hermite(V(xm,mu)) * S(xm,mu,nu,-1);
-	P(nu,mu,-1,-1) = Hermite(P(mu,nu,-1,-1));
-
-	for( int s : {-1,1} ){
-	  P(mu,nu,s,0) = P(mu,nu,s,1) + P(mu,nu,s,-1);
-	  P(mu,nu,0,s) = P(mu,nu,1,s) + P(mu,nu,-1,s);
-	  P(nu,mu,s,0) = P(nu,mu,s,1) + P(nu,mu,s,-1);
-	  P(nu,mu,0,s) = P(nu,mu,1,s) + P(nu,mu,-1,s);
-	}
-	P(mu,nu,0,0) = P(mu,nu,1,0) + P(mu,nu,-1,0);
-	P(nu,mu,0,0) = P(nu,mu,1,0) + P(nu,mu,-1,0);
+	tmp = V(x,mu) * Hermite(S(x,mu,nu,1));
+	Matrix<3,3>(plaq+index(mu,nu,1,1)) = tmp;
+	Matrix<3,3>(plaq+index(nu,mu,1,1)) = Hermite(tmp);
+	tmp = V(x,mu) * Hermite(S(x,mu,nu,-1));
+	Matrix<3,3>(plaq+index(mu,nu,1,-1)) = tmp;
+	Matrix<3,3>(plaq+index(nu,mu,-1,1)) = Hermite(tmp);
+	tmp = Hermite(V(xm,mu)) * S(xm,mu,nu,1);
+	Matrix<3,3>(plaq+index(mu,nu,-1,1)) = tmp;
+	Matrix<3,3>(plaq+index(nu,mu,1,-1)) = Hermite(tmp);
+	tmp = Hermite(V(xm,mu)) * S(xm,mu,nu,-1);
+	Matrix<3,3>(plaq+index(mu,nu,-1,-1)) = tmp;
+	Matrix<3,3>(plaq+index(nu,mu,-1,-1)) = Hermite(tmp);
       }
     }
   }
@@ -125,9 +117,6 @@ public:
 	     const Site& x ){
     double _Complex ptr[9];
     Matrix<3,3> tmp(ptr);
-    auto G = [&](int mu,int nu,int rho,int sm,int sn,int sr){
-      return Matrix<3,3>(sigma+index(mu,nu,rho,sm,sn,sr));
-    };
     for( int mu=0 ; mu<4 ; mu++ ){
       auto xm = x + mu;
       for( int nu=mu+1 ; nu<4 ; nu++ ){
@@ -135,20 +124,19 @@ public:
 	for( int rho=0 ; rho<4 ; rho++ ){
 	  if( rho==mu or rho==nu ) continue;
 	  for( int srho : {-1,1} ){
-	    G(mu,nu,rho, 1, 1,srho) = S(x,mu,rho,srho) * S(xm,nu,rho,srho);
-	    G(nu,mu,rho,-1,-1,srho) = Hermite(G(mu,nu,rho, 1 ,1,srho));
-	    G(mu,nu,rho,-1, 1,srho) = S(xm,nu,rho,srho) * Hermite(S(xn,mu,rho,srho));
-	    G(nu,mu,rho,-1, 1,srho) = Hermite(G(mu,nu,rho,-1, 1,srho));
-	    G(mu,nu,rho,-1,-1,srho) = Hermite(S(xn,mu,rho,srho)) * Hermite(S(x,nu,rho,srho));
-	    G(nu,mu,rho, 1, 1,srho) = Hermite(G(mu,nu,rho,-1,-1,srho));
-	    G(mu,nu,rho, 1,-1,srho) = Hermite(S(x,nu,rho,srho)) * S(x,mu,rho,srho);
-	    G(nu,mu,rho, 1,-1,srho) = Hermite(G(mu,nu,rho, 1,-1,srho));
+	    tmp = S(x,mu,rho,srho) * S(xm,nu,rho,srho);
+	    Matrix<3,3>(sigma+index(mu,nu,rho, 1 ,1,srho)) = tmp;
+	    Matrix<3,3>(sigma+index(nu,mu,rho,-1,-1,srho)) = Hermite(tmp);
+	    tmp = S(xm,nu,rho,srho) * Hermite(S(xn,mu,rho,srho));
+	    Matrix<3,3>(sigma+index(mu,nu,rho,-1, 1,srho)) = tmp;
+	    Matrix<3,3>(sigma+index(nu,mu,rho,-1, 1,srho)) = Hermite(tmp);
+	    tmp = Hermite(S(xn,mu,rho,srho)) * Hermite(S(x,nu,rho,srho));
+	    Matrix<3,3>(sigma+index(mu,nu,rho,-1,-1,srho)) = tmp;
+	    Matrix<3,3>(sigma+index(nu,mu,rho, 1, 1,srho)) = Hermite(tmp);
+	    tmp = Hermite(S(x,nu,rho,srho)) * S(x,mu,rho,srho);
+	    Matrix<3,3>(sigma+index(mu,nu,rho, 1,-1,srho)) = tmp;
+	    Matrix<3,3>(sigma+index(nu,mu,rho, 1,-1,srho)) = Hermite(tmp);
 	  }
-	  for( int sm : {-1,1} )
-	    for( int sn : {-1,1} ){
-	      G(mu,nu,rho,sm,sn,0) = G(mu,nu,rho,sm,sn,1) + G(mu,nu,rho,sm,sn,-1);
-	      G(nu,mu,rho,sm,sn,0) = G(nu,mu,rho,sm,sn,1) + G(nu,mu,rho,sm,sn,-1);
-	    }
 	}
       }
     }
