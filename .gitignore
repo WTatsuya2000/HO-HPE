@@ -1,11 +1,13 @@
 # generated outputs
 records/
 *.csv
+!shape_tables/**/*.csv
 loop_classification/Manifest.toml
 
 # build / run artifacts
 *.out
 *.o
+hpe_cost
 conf/
 data/
 log/
