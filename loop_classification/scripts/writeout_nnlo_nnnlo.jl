@@ -1,6 +1,10 @@
 # writeout_nnlo_nnnlo.jl
-# NNLO (length L=8) と NNNLO (length L=10) のループを書き下す。
-# 完全版の正準形分類 src を用いて各代表ループの多重度 M・γトレース D・寄与を出力する。
+# NNLO (length L=8) と N3LO (length L=10) のループを書き下す。
+#
+# これは **独立クロスチェック用**。分類に不変量バケツ + union-find の
+# invariant_* エンジンを使う（record_*.jl / writeout_shapes.jl が使う構成的生成
+# gen_canon_* とは別経路）。両者が同じ M・D・LLL を返すことが分類の検証になる。
+# 低速なので L=12 (N4LO) は対象外 — N4LO の一覧は scripts/writeout_shapes.jl で作る。
 # (data/ の旧分類は L=10 type4 が欠落しているため使わない)
 #
 # 使い方（プロジェクトルートから・スレッド指定推奨・別プロセスで）:
@@ -49,7 +53,7 @@ if mode == "wilson"
     include(joinpath(@__DIR__, "..", "src", "invariant_wilson.jl"))
     include(joinpath(@__DIR__, "..", "src", "gamma_trace_wilson.jl"))
     for L in (8, 10)
-        order = L == 8 ? "NNLO" : "NNNLO"
+        order = L == 8 ? "NNLO" : "N3LO"
         ntype = length(count_combinations(L))
         println("\n########## Wilson  L=$L  ($order)  ##########")
         println("# idx | type | loop | M | D | LLL | contrib(-6*(M/LLL)*D)")
@@ -73,7 +77,7 @@ elseif mode == "polyakov"
     include(joinpath(@__DIR__, "..", "src", "invariant_polyakov.jl"))
     include(joinpath(@__DIR__, "..", "src", "gamma_trace_polyakov.jl"))
     for L in (8, 10)
-        order = L == 8 ? "NNLO" : "NNNLO"
+        order = L == 8 ? "NNLO" : "N3LO"
         println("\n########## Polyakov  Nt=$Nt  L=$L  ($order, winding m=1)  ##########")
         println("# idx | loop | M | D | LLL | contrib(+6*(M/LLL)*D)")
         reps = classify_loop_inv_poly(L, Nt)

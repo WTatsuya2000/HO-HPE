@@ -3,7 +3,7 @@
 cd(joinpath(@__DIR__, ".."))
 using Base.Threads
 include(joinpath(@__DIR__, "..", "src", "gamma_trace_wilson.jl"))
-include(joinpath(@__DIR__, "..", "src", "fast_wilson.jl"))  # classify_loop_fastw（正準形+Booth）, wilson_mult
+include(joinpath(@__DIR__, "..", "src", "gen_canon_wilson.jl"))  # classify_loop_gen（構成的生成）, および fast_wilson.jl 経由で wilson_mult
 
 const XYZT = Dict{Symbol,String}(:a=>"x",:b=>"y",:c=>"z",:d=>"t",
     Symbol("-a")=>"-x",Symbol("-b")=>"-y",Symbol("-c")=>"-z",Symbol("-d")=>"-t")
@@ -16,7 +16,7 @@ function dml(w)
     (D, M, LLL)
 end
 
-paper = Dict(4=>288, 6=>8448, 8=>245952, 10=>7372800)
+paper = Dict(4=>288, 6=>8448, 8=>245952, 10=>7372800, 12=>225232896)
 mkpath("records")
 lio = open("records/wilson_loops.csv", "w")
 sio = open("records/wilson_summary.csv", "w")
@@ -24,10 +24,11 @@ println(lio, "id,kind,Nt,n,m,index,loop,D,M,LLL,contrib")
 println(sio, "id,kind,Nt,n,m,classes,sum_contrib,coeff,value,paper")
 
 gid = 0; sid = 0   # 通し番号（loops / summary）
-classify_loop_fastw(4,1)  # warmup
-for n in (4, 6, 8, 10)
+classify_loop_gen(4,1)  # warmup
+# n=12 が N4LO。分類は構成的生成（gen_canon_wilson）で全次数まとめて1分未満。
+for n in (4, 6, 8, 10, 12)
     sub = 0.0; idx = 0
-    for t in 1:length(count_combinations(n)), w in classify_loop_fastw(n, t)
+    for t in 1:length(count_combinations(n)), w in classify_loop_gen(n, t)
         D, M, LLL = dml(w); c = M*D/LLL; idx += 1; global gid += 1
         println(lio, "$gid,W,0,$n,0,$idx,\"$(loopstr(w))\",$(Int(D)),$M,$LLL,$c")
         sub += c
