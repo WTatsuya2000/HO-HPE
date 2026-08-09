@@ -107,18 +107,31 @@ c++ -std=gnu++17 -O2 -fpermissive -I src -o hpe_cost src/hpe_cost.cpp
 Costs are quoted in units of one `SingleStaple` evaluation = 48 MM/site. Measured with the
 default anchor rule, one pool per term:
 
-| term | MM/site | staples | traces | reach |
-|---|---|---|---|---|
-| W(6)  | 93    | 1.9   | 76        | 1 |
-| W(8)  | 694   | 14.5  | 1716      | 2 |
-| W(10) | 4815  | 100.3 | 38040     | 3 |
-| W(12) | 34217 | 712.9 | 1031830   | 3 |
-| L1(4,10) | 4414  | 92.0  | 9093   | 3 |
-| L1(4,12) | 38834 | 809.0 | 361497 | 3 |
+| term | MM/site | staples | traces | grouped traces | reach |
+|---|---|---|---|---|---|
+| W(6)  | 93    | 1.9   | 76        | 44    | 1 |
+| W(8)  | 694   | 14.5  | 1716      | 592   | 2 |
+| W(10) | 4815  | 100.3 | 38040     | 6833  | 3 |
+| W(12) | 34217 | 712.9 | 1031830   | 68573 | 3 |
+| L1(4,10) | 4414  | 92.0  | 9093   | 3657  | 3 |
+| L1(4,12) | 38834 | 809.0 | 361497 | 52088 | 3 |
 
-`traces` counts the `Re Tr[XY]` operations closing the trajectories; for `SU(N_c)` each is
-worth `1/(2N_c)` MM. `reach` is the spatial halo depth the sector needs under MPI domain
-decomposition — the choice of starting point bounds it well below the naive `L/2`.
+`reach` is the spatial halo depth the sector needs under MPI domain decomposition — the
+choice of starting point bounds it well below the naive `L/2`.
+
+`traces` counts the `Re Tr[XY]` operations that close the trajectories; for `SU(N_c)` each
+is worth `1/(2N_c)` MM, so for `W(12)` the traces would dominate the cost. They can be
+reduced by factorising: trajectories sharing a prefix have their suffixes summed first, so
+one trace serves the whole group. `grouped traces` is what the prefix grouping built into
+`hpe_pool.cpp` achieves (`HPEP_use_star`), bringing `W(12)` down by a factor of 15.
+
+Two caveats when comparing against published cost figures. First, the grouping is **off by
+default**: on the production compiler the variable-length inner loop cost more wall-clock
+time than the arithmetic it saved, even though it removes flops. Second, a dedicated
+biclique cover computed offline does substantially better than this prefix grouping —
+3858 terms for `W(10)` and 34992 for `W(12)`, roughly half of the numbers above. That
+generator lives in the measurement environment and is not part of this repository, so
+costs quoted from it cannot be reproduced with `hpe_cost` alone.
 
 Letting all terms share a single trie reduces the total for the twelve sectors at `Nt = 4`,
 `Lmax = 12` from 115396 MM/site (one pool per term) to **51596** MM/site:

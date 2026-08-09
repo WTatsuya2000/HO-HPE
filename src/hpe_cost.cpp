@@ -19,9 +19,12 @@
 //  Columns:
 //    MM/site   matrix multiplications per lattice site to build the pool
 //    staples   the same in units of one SingleStaple evaluation (48 MM)
-//    pairs     number of (prefix, suffix) traces closing the trajectories
-//    +ReTr     staples including the trace cost, 1/(2 N_c) MM per real trace
+//    traces    number of (prefix, suffix) traces closing the trajectories
+//    +ReTr     staples including that trace cost, 1/(2 N_c) MM per real trace
 //              and 1/N_c per complex one
+//    grouped   traces left after factorising trajectories that share a prefix:
+//              their suffixes are summed first, so one trace serves the group
+//    +ReTr'    staples including the grouped trace cost
 //    reach     spatial halo depth this sector needs under MPI decomposition
 //
 //  With pool = 1 or 2 several sectors share one trie, so the per-sector MM
@@ -78,24 +81,27 @@ int main( int argc , char** argv )
 
   printf( "### anchor = %-9s  pool = %-13s  Nt = %d  Lmax = %d\n" ,
           anchor_name(anchor) , pool_name(pool) , Nt , Lmax );
-  printf( "%-10s %5s %10s %10s %12s %10s %6s\n" ,
-          "sector" , "len" , "MM/site" , "staples" , "pairs" , "+ReTr" , "reach" );
+  printf( "%-10s %5s %10s %9s %12s %9s %11s %9s %6s\n" ,
+          "sector" , "len" , "MM/site" , "staples" ,
+          "traces" , "+ReTr" , "grouped" , "+ReTr'" , "reach" );
 
   for( int i=0 ; i<HPEP_nwilson() ; i++ ){
     char nm[16]; snprintf( nm , sizeof(nm) , "W%d" , HPEP_wilson_len(i) );
-    const long long mm = HPEP_wilson_mm(i) , np = HPEP_wilson_npair(i);
-    printf( "%-10s %5d %10lld %10.1f %12lld %10.1f %6d\n" , nm , HPEP_wilson_len(i) ,
-            mm , HPEP_staples(mm) , np ,
-            HPEP_staples(mm) + HPEP_trace_mm(np,false)/HPE_MM_PER_STAPLE ,
+    const long long mm = HPEP_wilson_mm(i) , np = HPEP_wilson_npair(i) , ns = HPEP_wilson_nstar(i);
+    printf( "%-10s %5d %10lld %9.1f %12lld %9.1f %11lld %9.1f %6d\n" , nm , HPEP_wilson_len(i) ,
+            mm , HPEP_staples(mm) ,
+            np , HPEP_staples(mm) + HPEP_trace_mm(np,false)/HPE_MM_PER_STAPLE ,
+            ns , HPEP_staples(mm) + HPEP_trace_mm(ns,false)/HPE_MM_PER_STAPLE ,
             HPEP_wilson_reach(i) );
   }
   for( int i=0 ; i<HPEP_npoly() ; i++ ){
     char nm[24];
     snprintf( nm , sizeof(nm) , "L%d(%d,%d)" , HPEP_poly_wind(i) , Nt , HPEP_poly_len(i) );
-    const long long mm = HPEP_poly_mm(i) , np = HPEP_poly_npair(i);
-    printf( "%-10s %5d %10lld %10.1f %12lld %10.1f %6d\n" , nm , HPEP_poly_len(i) ,
-            mm , HPEP_staples(mm) , np ,
-            HPEP_staples(mm) + HPEP_trace_mm(np,true)/HPE_MM_PER_STAPLE ,
+    const long long mm = HPEP_poly_mm(i) , np = HPEP_poly_npair(i) , ns = HPEP_poly_nstar(i);
+    printf( "%-10s %5d %10lld %9.1f %12lld %9.1f %11lld %9.1f %6d\n" , nm , HPEP_poly_len(i) ,
+            mm , HPEP_staples(mm) ,
+            np , HPEP_staples(mm) + HPEP_trace_mm(np,true)/HPE_MM_PER_STAPLE ,
+            ns , HPEP_staples(mm) + HPEP_trace_mm(ns,true)/HPE_MM_PER_STAPLE ,
             HPEP_poly_reach(i) );
   }
   printf( "pools = %d, total MM/site = %lld (%.1f staples), max reach = %d\n" ,

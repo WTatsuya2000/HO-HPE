@@ -451,6 +451,7 @@ long long HPEP_wilson_mm( int i ){ return HPEP_pool_mm( gp_wil[i].sec.pool ); }
 int       HPEP_wilson_pool( int i ){ return gp_wil[i].sec.pool; }
 long long HPEP_wilson_npair( int i ){ return (long long)gp_wil[i].sec.pairs.size(); }
 long long HPEP_wilson_npair_raw( int i ){ return gp_wil[i].sec.npair_raw; }
+long long HPEP_wilson_nstar( int i ){ return (long long)gp_wil[i].sec.star.size(); }
 int       HPEP_wilson_reach( int i ){ return gp_wil[i].sec.maxreach; }
 
 int    HPEP_npoly(){ return (int)gp_poly.size(); }
@@ -460,6 +461,7 @@ long long HPEP_poly_mm( int i ){ return HPEP_pool_mm( gp_poly[i].sec.pool ); }
 int       HPEP_poly_pool( int i ){ return gp_poly[i].sec.pool; }
 long long HPEP_poly_npair( int i ){ return (long long)gp_poly[i].sec.pairs.size(); }
 long long HPEP_poly_npair_raw( int i ){ return gp_poly[i].sec.npair_raw; }
+long long HPEP_poly_nstar( int i ){ return (long long)gp_poly[i].sec.star.size(); }
 int       HPEP_poly_reach( int i ){ return gp_poly[i].sec.maxreach; }
 
 int HPEP_maxreach(){
